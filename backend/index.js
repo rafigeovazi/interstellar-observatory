@@ -10,13 +10,28 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-const pool = new Pool({
-  user: process.env.DB_USER || "postgres",
-  host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "interstellar_db",
-  password: process.env.DB_PASSWORD || "postgres",
-  port: Number(process.env.DB_PORT) || 5432,
-});
+const poolConfig = (() => {
+  if (process.env.DATABASE_URL) {
+    return {
+      connectionString: process.env.DATABASE_URL,
+      // Supabase/Railway require TLS; allow opt-out only when explicitly disabled.
+      ssl:
+        process.env.DATABASE_SSL === "disable"
+          ? false
+          : { rejectUnauthorized: false },
+    };
+  }
+
+  return {
+    user: process.env.DB_USER || "postgres",
+    host: process.env.DB_HOST || "localhost",
+    database: process.env.DB_NAME || "interstellar_db",
+    password: process.env.DB_PASSWORD || "postgres",
+    port: Number(process.env.DB_PORT) || 5432,
+  };
+})();
+
+const pool = new Pool(poolConfig);
 
 const baseSelect = `
   SELECT
